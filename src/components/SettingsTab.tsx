@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Trash2, Upload, Settings, Activity, Star, ChartPieIcon, ChartBarIcon, ChartLineUp } from "lucide-react";
+import { Trash2, Upload, Settings, Activity, Star, ChartPieIcon, ChartBarIcon, LineChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -167,7 +167,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
                 Bar Chart
               </Button>
               <Button variant="outline" size="sm" className="flex items-center justify-center">
-                <ChartLineUp size={16} className="mr-2" />
+                <LineChart size={16} className="mr-2" />
                 Line Chart
               </Button>
             </div>
