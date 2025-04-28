@@ -1,15 +1,9 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
-import { MessageCircle, FileUp, Cog, Send, Trash2, Download, FileText, Bot, User, Settings } from "lucide-react";
+import { MessageCircle, FileUp, Cog, Trash2, FileText, Bot, User } from "lucide-react";
 
 import PDFUploader from "@/components/PDFUploader";
 import ModelSelector from "@/components/ModelSelector";
@@ -19,12 +13,15 @@ import PDFComparison from "@/components/PDFComparison";
 import { PDFDocument } from "@/types/pdf";
 import ThemeSelector from "@/components/ThemeSelector";
 import SettingsTab from "@/components/SettingsTab";
+import DataVisualization from "@/components/DataVisualization";
+import AppIconSelector from "@/components/AppIconSelector";
+import PythonBackend from "@/services/PythonBackend";
 
 const Index = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<string>("chat");
   const [documents, setDocuments] = useState<PDFDocument[]>([]);
-  const [messages, setMessages] = useState<Array<{ role: string; content: string }>>([]);
+  const [messages, setMessages] = useState<Array<{ role: string; content: string; data?: any[] }>>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>("");
@@ -32,6 +29,8 @@ const Index = () => {
   const [temperature, setTemperature] = useState<number>(0.7);
   const [maxTokens, setMaxTokens] = useState<number>(512);
   const [mode, setMode] = useState<"single" | "compare">("single");
+  const [appIcon, setAppIcon] = useState<string>("random");
+  const [visualizationData, setVisualizationData] = useState<any[] | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [theme, setTheme] = useState<string>(() => {
     // Check for saved theme or system preference
@@ -67,7 +66,7 @@ const Index = () => {
     }
   }, [messages]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
     if (documents.length === 0) {
       toast({
@@ -86,19 +85,58 @@ const Index = () => {
       return;
     }
 
-    setMessages((prev) => [...prev, { role: "user", content: inputValue }]);
+    const userMessage = { role: "user", content: inputValue };
+    setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
-
-    setTimeout(() => {
-      const simulatedResponse = {
-        role: "assistant",
-        content: `This is a simulated response to: "${inputValue}"\n\nIn a real implementation, this would process your query using the selected LLM model (${selectedModel || modelPath}) against the uploaded PDF documents (${documents.map(d => d.name).join(", ")}).`,
-      };
-      setMessages((prev) => [...prev, simulatedResponse]);
-      setIsLoading(false);
-    }, 1500);
-
     setInputValue("");
+
+    try {
+      // Check if the message contains visualization requests
+      const isVisualizationRequest = 
+        inputValue.toLowerCase().includes('chart') || 
+        inputValue.toLowerCase().includes('graph') || 
+        inputValue.toLowerCase().includes('plot') ||
+        inputValue.toLowerCase().includes('visualize');
+      
+      if (isVisualizationRequest) {
+        // Process data visualization request
+        const response = await PythonBackend.analyzeData({
+          query: inputValue,
+          documents: documents.map(doc => doc.name),
+          analysisType: 'visualization'
+        });
+        
+        setMessages((prev) => [...prev, { 
+          role: "assistant", 
+          content: response.result,
+          data: response.data 
+        }]);
+        
+        if (response.data) {
+          setVisualizationData(response.data);
+          setTimeout(() => {
+            setActiveTab("visualization");
+          }, 500);
+        }
+      } else {
+        // Process regular query
+        setTimeout(() => {
+          const simulatedResponse = {
+            role: "assistant",
+            content: `This is a simulated response to: "${inputValue}"\n\nIn a real implementation, this would process your query using the selected LLM model (${selectedModel || modelPath}) against the uploaded PDF documents (${documents.map(d => d.name).join(", ")}).`,
+          };
+          setMessages((prev) => [...prev, simulatedResponse]);
+        }, 1500);
+      }
+    } catch (error) {
+      toast({
+        title: "Error processing request",
+        description: "There was an error processing your request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleFileUpload = (newDocuments: PDFDocument[]) => {
@@ -147,10 +185,12 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background text-foreground flex">
       <div className="w-64 bg-card border-r border-border p-4 flex flex-col">
         <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-foreground">
-          <Bot size={24} />
+          <div className="flex items-center justify-center w-8 h-8">
+            <AppIconSelector icon={appIcon} size="sm" />
+          </div>
           <span>PDF Genius</span>
           {documents.length > 0 && (
             <span className="text-sm font-normal text-muted-foreground ml-2">
@@ -165,7 +205,7 @@ const Index = () => {
             <PDFUploader onUpload={handleFileUpload} />
           </div>
 
-          <Separator />
+          <div className="h-px bg-border" />
           
           <div>
             <h3 className="text-sm font-medium mb-2 text-foreground">Model Settings</h3>
@@ -179,12 +219,14 @@ const Index = () => {
             <div className="mt-4">
               <label className="text-sm font-medium text-foreground">Temperature</label>
               <div className="flex items-center gap-2">
-                <Slider 
-                  value={[temperature]} 
-                  min={0} 
-                  max={1} 
+                <input 
+                  type="range"
+                  min={0}
+                  max={1}
                   step={0.1}
-                  onValueChange={(values) => setTemperature(values[0])} 
+                  value={temperature}
+                  onChange={(e) => setTemperature(parseFloat(e.target.value))} 
+                  className="w-full"
                 />
                 <span className="text-sm w-8 text-foreground">{temperature}</span>
               </div>
@@ -193,19 +235,21 @@ const Index = () => {
             <div className="mt-4">
               <label className="text-sm font-medium text-foreground">Max Tokens</label>
               <div className="flex items-center gap-2">
-                <Slider 
-                  value={[maxTokens]} 
-                  min={64} 
-                  max={2048} 
+                <input 
+                  type="range"
+                  min={64}
+                  max={2048}
                   step={64}
-                  onValueChange={(values) => setMaxTokens(values[0])} 
+                  value={maxTokens}
+                  onChange={(e) => setMaxTokens(parseInt(e.target.value))} 
+                  className="w-full"
                 />
                 <span className="text-sm w-12 text-foreground">{maxTokens}</span>
               </div>
             </div>
           </div>
 
-          <Separator />
+          <div className="h-px bg-border" />
           
           <div>
             <h3 className="text-sm font-medium mb-2 text-foreground">Analysis Mode</h3>
@@ -234,10 +278,10 @@ const Index = () => {
 
         {documents.length > 0 && (
           <>
-            <Separator className="my-4" />
+            <div className="h-px bg-border my-4" />
             <div>
               <h3 className="text-sm font-medium mb-2 text-foreground">Uploaded Documents ({documents.length})</h3>
-              <ScrollArea className="h-40">
+              <div className="h-40 overflow-y-auto pr-2">
                 <ul className="space-y-1">
                   {documents.map((doc, index) => (
                     <li key={index} className="text-sm flex items-center gap-2 text-foreground">
@@ -246,7 +290,7 @@ const Index = () => {
                     </li>
                   ))}
                 </ul>
-              </ScrollArea>
+              </div>
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -274,8 +318,14 @@ const Index = () => {
                   Compare Documents
                 </TabsTrigger>
               )}
+              {visualizationData && (
+                <TabsTrigger value="visualization" className="flex items-center gap-1">
+                  <FileText size={16} />
+                  Visualization
+                </TabsTrigger>
+              )}
               <TabsTrigger value="settings" className="flex items-center gap-1">
-                <Settings size={16} />
+                <Cog size={16} />
                 Settings
               </TabsTrigger>
             </TabsList>
@@ -288,12 +338,12 @@ const Index = () => {
           </div>
         </div>
         
-        <Tabs value={activeTab} className="flex-1 flex flex-col">
-          <TabsContent value="chat" className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col">
+          <div className={`flex-1 flex flex-col ${activeTab === "chat" ? "" : "hidden"}`}>
             <div ref={chatContainerRef} className="flex-1 overflow-auto p-4 bg-muted/30">
               {messages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
-                  <Bot size={48} strokeWidth={1} />
+                  <AppIconSelector icon={appIcon} size="lg" />
                   <p className="mt-2 text-center max-w-md">
                     Upload PDFs and select a model to start chatting about your documents.
                   </p>
@@ -319,9 +369,9 @@ const Index = () => {
               isLoading={isLoading}
               disabled={documents.length === 0 || (!selectedModel && !modelPath)}
             />
-          </TabsContent>
+          </div>
           
-          <TabsContent value="compare" className="flex-1 p-4 bg-muted/30 overflow-auto">
+          <div className={`flex-1 p-4 bg-muted/30 overflow-auto ${activeTab === "compare" ? "" : "hidden"}`}>
             {mode === "compare" && documents.length >= 2 ? (
               <PDFComparison documents={documents} />
             ) : (
@@ -329,18 +379,34 @@ const Index = () => {
                 <p>Please select at least two documents to compare.</p>
               </div>
             )}
-          </TabsContent>
+          </div>
 
-          <TabsContent value="settings" className="flex-1 p-0 m-0">
+          <div className={`flex-1 p-4 bg-muted/30 overflow-auto ${activeTab === "visualization" ? "" : "hidden"}`}>
+            {visualizationData ? (
+              <DataVisualization data={visualizationData} title="Document Analysis" />
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
+                <p>Ask a question about charts or visualization to see data analysis.</p>
+              </div>
+            )}
+          </div>
+
+          <div className={`flex-1 ${activeTab === "settings" ? "" : "hidden"}`}>
             <SettingsTab
               selectedModel={selectedModel}
               modelPath={modelPath}
               onSelectModel={setSelectedModel}
               onSetModelPath={setModelPath}
               onDeleteModel={handleDeleteModel}
+              temperature={temperature}
+              setTemperature={setTemperature}
+              maxTokens={maxTokens}
+              setMaxTokens={setMaxTokens}
+              appIcon={appIcon}
+              setAppIcon={setAppIcon}
             />
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
       </div>
       
       <ThemeSelector currentTheme={theme} onThemeChange={handleThemeChange} />
