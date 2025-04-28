@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
-import { MessageCircle, FileUp, Cog, Send, Trash2, Download, FileText, Bot, User } from "lucide-react";
+import { MessageCircle, FileUp, Cog, Send, Trash2, Download, FileText, Bot, User, Settings } from "lucide-react";
 
 import PDFUploader from "@/components/PDFUploader";
 import ModelSelector from "@/components/ModelSelector";
@@ -17,6 +16,8 @@ import ChatMessage from "@/components/ChatMessage";
 import ChatInput from "@/components/ChatInput";
 import PDFComparison from "@/components/PDFComparison";
 import { PDFDocument } from "@/types/pdf";
+import ThemeSelector from "@/components/ThemeSelector";
+import SettingsTab from "@/components/SettingsTab";
 
 const Index = () => {
   const { toast } = useToast();
@@ -31,8 +32,8 @@ const Index = () => {
   const [maxTokens, setMaxTokens] = useState<number>(512);
   const [mode, setMode] = useState<"single" | "compare">("single");
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const [theme, setTheme] = useState<string>("light");
 
-  // Automatically scroll to the bottom when messages are added
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
@@ -61,9 +62,7 @@ const Index = () => {
     setMessages((prev) => [...prev, { role: "user", content: inputValue }]);
     setIsLoading(true);
 
-    // Simulate LLM processing
     setTimeout(() => {
-      // This is a simulation. In a real implementation, this would call the backend API
       const simulatedResponse = {
         role: "assistant",
         content: `This is a simulated response to: "${inputValue}"\n\nIn a real implementation, this would process your query using the selected LLM model (${selectedModel || modelPath}) against the uploaded PDF documents (${documents.map(d => d.name).join(", ")}).`,
@@ -82,7 +81,6 @@ const Index = () => {
       description: "Documents are ready for analysis.",
     });
 
-    // If this is the first document, add a welcome message
     if (messages.length === 0) {
       setMessages([{ 
         role: "assistant", 
@@ -108,13 +106,31 @@ const Index = () => {
     });
   };
 
+  const handleThemeChange = (newTheme: string) => {
+    setTheme(newTheme);
+    // In a real implementation, this would persist the theme
+  };
+
+  const handleDeleteModel = () => {
+    setSelectedModel("");
+    setModelPath("");
+    toast({
+      title: "Model removed",
+      description: "The model has been successfully removed.",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
       <div className="w-64 bg-white border-r border-gray-200 p-4 flex flex-col">
         <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
           <Bot size={24} />
           <span>PDF Genius</span>
+          {documents.length > 0 && (
+            <span className="text-sm font-normal text-gray-500 ml-2">
+              ({documents.length} PDF{documents.length !== 1 && 's'})
+            </span>
+          )}
         </h2>
         
         <div className="space-y-6 flex-1">
@@ -190,7 +206,6 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Document List */}
         {documents.length > 0 && (
           <>
             <Separator className="my-4" />
@@ -219,7 +234,6 @@ const Index = () => {
         )}
       </div>
 
-      {/* Main content */}
       <div className="flex-1 flex flex-col">
         <div className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -234,14 +248,28 @@ const Index = () => {
                   Compare Documents
                 </TabsTrigger>
               )}
+              <TabsTrigger value="settings" className="flex items-center gap-1">
+                <Settings size={16} />
+                Settings
+              </TabsTrigger>
             </TabsList>
-          
+
             <TabsContent value="chat" className="flex-1 flex flex-col p-0 m-0">
               {/* Chat content will be rendered here */}
             </TabsContent>
             
             <TabsContent value="compare" className="flex-1 p-0 m-0 bg-gray-50">
               {/* Compare content will be rendered here */}
+            </TabsContent>
+
+            <TabsContent value="settings" className="flex-1 p-0 m-0">
+              <SettingsTab
+                selectedModel={selectedModel}
+                modelPath={modelPath}
+                onSelectModel={setSelectedModel}
+                onSetModelPath={setModelPath}
+                onDeleteModel={handleDeleteModel}
+              />
             </TabsContent>
           </Tabs>
           
@@ -254,7 +282,6 @@ const Index = () => {
         
         {activeTab === "chat" && (
           <div className="flex-1 flex flex-col">
-            {/* Chat Messages */}
             <div ref={chatContainerRef} className="flex-1 overflow-auto p-4 bg-gray-50">
               {messages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-gray-400">
@@ -277,7 +304,6 @@ const Index = () => {
               )}
             </div>
             
-            {/* Chat Input */}
             <ChatInput 
               value={inputValue}
               onChange={setInputValue}
