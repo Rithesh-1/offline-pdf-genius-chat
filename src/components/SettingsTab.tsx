@@ -74,3 +74,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
       </Card>
     </div>
   );
+};
+
+export default SettingsTab;
+

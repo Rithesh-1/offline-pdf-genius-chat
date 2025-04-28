@@ -28,3 +28,7 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({ currentTheme, onThemeChan
       </div>
     </div>
   );
+};
+
+export default ThemeSelector;
+
