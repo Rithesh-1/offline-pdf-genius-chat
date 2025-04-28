@@ -33,7 +33,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
           <div>
             <Label>Selected Model</Label>
             <div className="flex items-center gap-2 mt-2">
-              <span className="flex-1 text-sm text-gray-600">
+              <span className="flex-1 text-sm text-gray-600 dark:text-gray-300">
                 {selectedModel || modelPath || "No model selected"}
               </span>
               <Button
@@ -55,7 +55,9 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
-                    onSetModelPath(file.path);
+                    // Fix: File API doesn't have direct path property
+                    // Use name instead, or implement file system access differently
+                    onSetModelPath(file.name);
                   }
                 }}
                 className="hidden"
@@ -77,4 +79,3 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
 };
 
 export default SettingsTab;
-

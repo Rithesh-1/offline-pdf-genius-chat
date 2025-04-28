@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +33,33 @@ const Index = () => {
   const [maxTokens, setMaxTokens] = useState<number>(512);
   const [mode, setMode] = useState<"single" | "compare">("single");
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const [theme, setTheme] = useState<string>("light");
+  const [theme, setTheme] = useState<string>(() => {
+    // Check for saved theme or system preference
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme) return savedTheme;
+      
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+      }
+    }
+    return 'light';
+  });
+
+  // Apply theme class to document
+  useEffect(() => {
+    const root = window.document.documentElement;
+    root.classList.remove('light', 'dark');
+    
+    if (theme === 'system') {
+      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      root.classList.add(systemTheme);
+    } else {
+      root.classList.add(theme);
+    }
+    
+    localStorage.setItem('theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -108,7 +135,6 @@ const Index = () => {
 
   const handleThemeChange = (newTheme: string) => {
     setTheme(newTheme);
-    // In a real implementation, this would persist the theme
   };
 
   const handleDeleteModel = () => {
@@ -121,13 +147,13 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <div className="w-64 bg-white border-r border-gray-200 p-4 flex flex-col">
-        <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+    <div className="min-h-screen bg-background flex">
+      <div className="w-64 bg-card border-r border-border p-4 flex flex-col">
+        <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-foreground">
           <Bot size={24} />
           <span>PDF Genius</span>
           {documents.length > 0 && (
-            <span className="text-sm font-normal text-gray-500 ml-2">
+            <span className="text-sm font-normal text-muted-foreground ml-2">
               ({documents.length} PDF{documents.length !== 1 && 's'})
             </span>
           )}
@@ -135,14 +161,14 @@ const Index = () => {
         
         <div className="space-y-6 flex-1">
           <div>
-            <h3 className="text-sm font-medium mb-2">Upload PDFs</h3>
+            <h3 className="text-sm font-medium mb-2 text-foreground">Upload PDFs</h3>
             <PDFUploader onUpload={handleFileUpload} />
           </div>
 
           <Separator />
           
           <div>
-            <h3 className="text-sm font-medium mb-2">Model Settings</h3>
+            <h3 className="text-sm font-medium mb-2 text-foreground">Model Settings</h3>
             <ModelSelector 
               selectedModel={selectedModel}
               onSelectModel={setSelectedModel}
@@ -151,7 +177,7 @@ const Index = () => {
             />
             
             <div className="mt-4">
-              <label className="text-sm font-medium">Temperature</label>
+              <label className="text-sm font-medium text-foreground">Temperature</label>
               <div className="flex items-center gap-2">
                 <Slider 
                   value={[temperature]} 
@@ -160,12 +186,12 @@ const Index = () => {
                   step={0.1}
                   onValueChange={(values) => setTemperature(values[0])} 
                 />
-                <span className="text-sm w-8">{temperature}</span>
+                <span className="text-sm w-8 text-foreground">{temperature}</span>
               </div>
             </div>
             
             <div className="mt-4">
-              <label className="text-sm font-medium">Max Tokens</label>
+              <label className="text-sm font-medium text-foreground">Max Tokens</label>
               <div className="flex items-center gap-2">
                 <Slider 
                   value={[maxTokens]} 
@@ -174,7 +200,7 @@ const Index = () => {
                   step={64}
                   onValueChange={(values) => setMaxTokens(values[0])} 
                 />
-                <span className="text-sm w-12">{maxTokens}</span>
+                <span className="text-sm w-12 text-foreground">{maxTokens}</span>
               </div>
             </div>
           </div>
@@ -182,23 +208,23 @@ const Index = () => {
           <Separator />
           
           <div>
-            <h3 className="text-sm font-medium mb-2">Analysis Mode</h3>
+            <h3 className="text-sm font-medium mb-2 text-foreground">Analysis Mode</h3>
             <div className="flex flex-col space-y-2">
-              <label className="flex items-center space-x-2 cursor-pointer">
+              <label className="flex items-center space-x-2 cursor-pointer text-foreground">
                 <input 
                   type="radio" 
                   checked={mode === "single"} 
                   onChange={() => setMode("single")} 
-                  className="form-radio text-blue-600"
+                  className="form-radio text-primary"
                 />
                 <span>Analyze Single PDF</span>
               </label>
-              <label className="flex items-center space-x-2 cursor-pointer">
+              <label className="flex items-center space-x-2 cursor-pointer text-foreground">
                 <input 
                   type="radio" 
                   checked={mode === "compare"} 
                   onChange={() => setMode("compare")} 
-                  className="form-radio text-blue-600"
+                  className="form-radio text-primary"
                 />
                 <span>Compare PDFs</span>
               </label>
@@ -210,11 +236,11 @@ const Index = () => {
           <>
             <Separator className="my-4" />
             <div>
-              <h3 className="text-sm font-medium mb-2">Uploaded Documents ({documents.length})</h3>
+              <h3 className="text-sm font-medium mb-2 text-foreground">Uploaded Documents ({documents.length})</h3>
               <ScrollArea className="h-40">
                 <ul className="space-y-1">
                   {documents.map((doc, index) => (
-                    <li key={index} className="text-sm flex items-center gap-2">
+                    <li key={index} className="text-sm flex items-center gap-2 text-foreground">
                       <FileText size={14} />
                       <span className="truncate">{doc.name}</span>
                     </li>
@@ -235,7 +261,7 @@ const Index = () => {
       </div>
 
       <div className="flex-1 flex flex-col">
-        <div className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
+        <div className="bg-card border-b border-border p-4 flex justify-between items-center">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList>
               <TabsTrigger value="chat" className="flex items-center gap-1">
@@ -253,24 +279,6 @@ const Index = () => {
                 Settings
               </TabsTrigger>
             </TabsList>
-
-            <TabsContent value="chat" className="flex-1 flex flex-col p-0 m-0">
-              {/* Chat content will be rendered here */}
-            </TabsContent>
-            
-            <TabsContent value="compare" className="flex-1 p-0 m-0 bg-gray-50">
-              {/* Compare content will be rendered here */}
-            </TabsContent>
-
-            <TabsContent value="settings" className="flex-1 p-0 m-0">
-              <SettingsTab
-                selectedModel={selectedModel}
-                modelPath={modelPath}
-                onSelectModel={setSelectedModel}
-                onSetModelPath={setModelPath}
-                onDeleteModel={handleDeleteModel}
-              />
-            </TabsContent>
           </Tabs>
           
           <div className="flex gap-2">
@@ -280,11 +288,11 @@ const Index = () => {
           </div>
         </div>
         
-        {activeTab === "chat" && (
-          <div className="flex-1 flex flex-col">
-            <div ref={chatContainerRef} className="flex-1 overflow-auto p-4 bg-gray-50">
+        <Tabs value={activeTab} className="flex-1 flex flex-col">
+          <TabsContent value="chat" className="flex-1 flex flex-col">
+            <div ref={chatContainerRef} className="flex-1 overflow-auto p-4 bg-muted/30">
               {messages.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
                   <Bot size={48} strokeWidth={1} />
                   <p className="mt-2 text-center max-w-md">
                     Upload PDFs and select a model to start chatting about your documents.
@@ -297,7 +305,7 @@ const Index = () => {
                   ))}
                   {isLoading && (
                     <div className="flex justify-center py-4">
-                      <div className="bg-white rounded-lg p-4 shadow-sm animate-pulse w-16 h-8"></div>
+                      <div className="bg-card rounded-lg p-4 shadow-sm animate-pulse w-16 h-8"></div>
                     </div>
                   )}
                 </div>
@@ -311,21 +319,31 @@ const Index = () => {
               isLoading={isLoading}
               disabled={documents.length === 0 || (!selectedModel && !modelPath)}
             />
-          </div>
-        )}
-        
-        {activeTab === "compare" && (
-          <div className="flex-1 p-4 bg-gray-50 overflow-auto">
+          </TabsContent>
+          
+          <TabsContent value="compare" className="flex-1 p-4 bg-muted/30 overflow-auto">
             {mode === "compare" && documents.length >= 2 ? (
               <PDFComparison documents={documents} />
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-gray-400">
+              <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
                 <p>Please select at least two documents to compare.</p>
               </div>
             )}
-          </div>
-        )}
+          </TabsContent>
+
+          <TabsContent value="settings" className="flex-1 p-0 m-0">
+            <SettingsTab
+              selectedModel={selectedModel}
+              modelPath={modelPath}
+              onSelectModel={setSelectedModel}
+              onSetModelPath={setModelPath}
+              onDeleteModel={handleDeleteModel}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
+      
+      <ThemeSelector currentTheme={theme} onThemeChange={handleThemeChange} />
     </div>
   );
 };
