@@ -222,7 +222,7 @@ const Index = () => {
       {/* Main content */}
       <div className="flex-1 flex flex-col">
         <div className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
-          <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList>
               <TabsTrigger value="chat" className="flex items-center gap-1">
                 <MessageCircle size={16} />
@@ -235,6 +235,14 @@ const Index = () => {
                 </TabsTrigger>
               )}
             </TabsList>
+          
+            <TabsContent value="chat" className="flex-1 flex flex-col p-0 m-0">
+              {/* Chat content will be rendered here */}
+            </TabsContent>
+            
+            <TabsContent value="compare" className="flex-1 p-0 m-0 bg-gray-50">
+              {/* Compare content will be rendered here */}
+            </TabsContent>
           </Tabs>
           
           <div className="flex gap-2">
@@ -244,49 +252,53 @@ const Index = () => {
           </div>
         </div>
         
-        <TabsContent value="chat" className="flex-1 flex flex-col p-0 m-0">
-          {/* Chat Messages */}
-          <div ref={chatContainerRef} className="flex-1 overflow-auto p-4 bg-gray-50">
-            {messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                <Bot size={48} strokeWidth={1} />
-                <p className="mt-2 text-center max-w-md">
-                  Upload PDFs and select a model to start chatting about your documents.
-                </p>
-              </div>
+        {activeTab === "chat" && (
+          <div className="flex-1 flex flex-col">
+            {/* Chat Messages */}
+            <div ref={chatContainerRef} className="flex-1 overflow-auto p-4 bg-gray-50">
+              {messages.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                  <Bot size={48} strokeWidth={1} />
+                  <p className="mt-2 text-center max-w-md">
+                    Upload PDFs and select a model to start chatting about your documents.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {messages.map((message, index) => (
+                    <ChatMessage key={index} message={message} />
+                  ))}
+                  {isLoading && (
+                    <div className="flex justify-center py-4">
+                      <div className="bg-white rounded-lg p-4 shadow-sm animate-pulse w-16 h-8"></div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            {/* Chat Input */}
+            <ChatInput 
+              value={inputValue}
+              onChange={setInputValue}
+              onSend={handleSendMessage}
+              isLoading={isLoading}
+              disabled={documents.length === 0 || (!selectedModel && !modelPath)}
+            />
+          </div>
+        )}
+        
+        {activeTab === "compare" && (
+          <div className="flex-1 p-4 bg-gray-50 overflow-auto">
+            {mode === "compare" && documents.length >= 2 ? (
+              <PDFComparison documents={documents} />
             ) : (
-              <div className="space-y-4">
-                {messages.map((message, index) => (
-                  <ChatMessage key={index} message={message} />
-                ))}
-                {isLoading && (
-                  <div className="flex justify-center py-4">
-                    <div className="bg-white rounded-lg p-4 shadow-sm animate-pulse w-16 h-8"></div>
-                  </div>
-                )}
+              <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                <p>Please select at least two documents to compare.</p>
               </div>
             )}
           </div>
-          
-          {/* Chat Input */}
-          <ChatInput 
-            value={inputValue}
-            onChange={setInputValue}
-            onSend={handleSendMessage}
-            isLoading={isLoading}
-            disabled={documents.length === 0 || (!selectedModel && !modelPath)}
-          />
-        </TabsContent>
-        
-        <TabsContent value="compare" className="flex-1 p-4 m-0 bg-gray-50 overflow-auto">
-          {mode === "compare" && documents.length >= 2 ? (
-            <PDFComparison documents={documents} />
-          ) : (
-            <div className="h-full flex flex-col items-center justify-center text-gray-400">
-              <p>Please select at least two documents to compare.</p>
-            </div>
-          )}
-        </TabsContent>
+        )}
       </div>
     </div>
   );
