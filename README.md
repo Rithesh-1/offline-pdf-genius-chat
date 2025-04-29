@@ -1,8 +1,53 @@
+
 # Welcome to your Lovable project
 
 ## Project info
 
 **URL**: https://lovable.dev/projects/a99be13b-2f2e-4a9c-9b89-32032132cd9e
+
+## How to Load and Run Models Locally
+
+This application supports loading and running AI models locally. Follow these steps to get started:
+
+### Supported Models
+
+The application supports various model formats:
+- `.bin` - Model binary files
+- `.gguf` - GGUF format (newer, optimized format used by LLaMA, Mistral models)
+- `.ggml` - GGML format (used by many quantized models)
+- `.pt`/`.pth` - PyTorch model files
+- `.onnx` - ONNX Runtime models
+
+### Loading a Local Model
+
+1. **Using the Model Selector**:
+   - Navigate to the Settings tab in the application
+   - Under "Model Settings", you'll see an option to upload a model file
+   - Click "Choose Model File" to select your local model
+
+2. **Using Custom Path**:
+   - Select "Custom model..." from the model dropdown
+   - Enter the path to your model file on your local machine
+   - Click "Set" to apply the path
+
+3. **Model Requirements**:
+   - Ensure your model is compatible with browser-based inference
+   - Larger models (>1GB) may take significant time to load
+   - WebGPU-compatible models will use GPU acceleration if available
+
+### System Resource Usage
+
+The application includes a resource monitor showing:
+- Memory usage during model loading and inference
+- CPU utilization
+- GPU usage and VRAM (if WebGPU is available in your browser)
+
+### Tips for Optimal Performance
+
+- Use quantized models (GGUF/GGML) for better performance
+- Adjust the context size based on your device capabilities
+- For large models, ensure sufficient RAM is available
+- Close other resource-intensive applications while running inference
 
 ## How can I edit this code?
 

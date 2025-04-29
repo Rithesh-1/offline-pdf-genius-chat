@@ -81,7 +81,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
       toast({
         title: "Large model file",
         description: `This file is ${(file.size / 1000000000).toFixed(2)}GB. Loading may take some time.`,
-        variant: "warning",
+        variant: "destructive", // Changed from "warning" to "destructive" as "warning" is not a valid variant
       });
     }
     
