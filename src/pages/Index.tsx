@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { MessageCircle, FileUp, Cog, Trash2, FileText, Bot, User } from "lucide-react";
+import { MessageCircle, FileUp, Cog, Trash2, FileText, User, Server } from "lucide-react";
 
 import PDFUploader from "@/components/PDFUploader";
 import ModelSelector from "@/components/ModelSelector";
@@ -16,6 +16,7 @@ import SettingsTab from "@/components/SettingsTab";
 import DataVisualization from "@/components/DataVisualization";
 import AppIconSelector from "@/components/AppIconSelector";
 import PythonBackend from "@/services/PythonBackend";
+import SystemResourceMonitor from "@/components/SystemResourceMonitor";
 
 const Index = () => {
   const { toast } = useToast();
@@ -31,7 +32,11 @@ const Index = () => {
   const [mode, setMode] = useState<"single" | "compare">("single");
   const [appIcon, setAppIcon] = useState<string>("random");
   const [visualizationData, setVisualizationData] = useState<any[] | null>(null);
+  const [isModelLoading, setIsModelLoading] = useState(false);
+  const [isModelRunning, setIsModelRunning] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Theme state
   const [theme, setTheme] = useState<string>(() => {
     // Check for saved theme or system preference
     if (typeof window !== 'undefined') {
@@ -60,26 +65,41 @@ const Index = () => {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  // Auto-scroll chat to bottom when messages change
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [messages]);
 
+  // Helper function for PDF file checking
+  const isPDFUploaded = () => {
+    return documents.length > 0;
+  };
+
+  // Helper function for model checking
+  const isModelSelected = () => {
+    return !!selectedModel || !!modelPath;
+  };
+
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
-    if (documents.length === 0) {
+    
+    // Enforce PDF upload requirement
+    if (!isPDFUploaded()) {
       toast({
         title: "No PDF document",
-        description: "Please upload at least one PDF document first.",
+        description: "You must upload at least one PDF document before chatting.",
         variant: "destructive",
       });
       return;
     }
-    if (!selectedModel && !modelPath) {
+
+    // Enforce model selection requirement
+    if (!isModelSelected()) {
       toast({
-        title: "No LLM model selected",
-        description: "Please select or provide a path to an LLM model.",
+        title: "No model selected",
+        description: "Please select a model or provide a path to a model file.",
         variant: "destructive",
       });
       return;
@@ -89,6 +109,9 @@ const Index = () => {
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
     setInputValue("");
+    
+    // Show model running status during inference
+    setIsModelRunning(true);
 
     try {
       // Check if the message contains visualization requests
@@ -136,6 +159,7 @@ const Index = () => {
       });
     } finally {
       setIsLoading(false);
+      setIsModelRunning(false);
     }
   };
 
@@ -184,6 +208,23 @@ const Index = () => {
     });
   };
 
+  // Show warning when trying to chat without PDFs
+  const handleChatFocus = () => {
+    if (!isPDFUploaded()) {
+      toast({
+        title: "Upload a PDF first",
+        description: "Please upload at least one PDF document before starting the chat.",
+        variant: "warning",
+      });
+    } else if (!isModelSelected()) {
+      toast({
+        title: "Select a model",
+        description: "Please select or load a model to analyze your documents.",
+        variant: "warning", 
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground flex">
       <div className="w-64 bg-card border-r border-border p-4 flex flex-col">
@@ -214,6 +255,8 @@ const Index = () => {
               onSelectModel={setSelectedModel}
               modelPath={modelPath}
               onSetModelPath={setModelPath}
+              isLoading={isModelLoading}
+              setIsLoading={setIsModelLoading}
             />
             
             <div className="mt-4">
@@ -274,6 +317,15 @@ const Index = () => {
               </label>
             </div>
           </div>
+          
+          {(isModelLoading || isModelRunning) && (
+            <div className="mt-2">
+              <SystemResourceMonitor 
+                isModelLoading={isModelLoading} 
+                isModelInference={isModelRunning} 
+              />
+            </div>
+          )}
         </div>
 
         {documents.length > 0 && (
@@ -345,7 +397,13 @@ const Index = () => {
                 <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
                   <AppIconSelector icon={appIcon} size="lg" />
                   <p className="mt-2 text-center max-w-md">
-                    Upload PDFs and select a model to start chatting about your documents.
+                    {!isPDFUploaded() ? (
+                      <>Upload PDFs to start chatting about your documents.</>
+                    ) : !isModelSelected() ? (
+                      <>Select a model to analyze your PDF documents.</>
+                    ) : (
+                      <>Your documents and model are ready. Type a message to start chatting.</>
+                    )}
                   </p>
                 </div>
               ) : (
@@ -367,7 +425,8 @@ const Index = () => {
               onChange={setInputValue}
               onSend={handleSendMessage}
               isLoading={isLoading}
-              disabled={documents.length === 0 || (!selectedModel && !modelPath)}
+              onFocus={handleChatFocus}
+              disabled={!isPDFUploaded() || !isModelSelected()}
             />
           </div>
           
