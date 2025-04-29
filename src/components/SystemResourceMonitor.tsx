@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { getSystemResources, formatMemory, SystemResources } from '@/utils/systemMonitor';
-import { Cpu, Memory, Database, Server } from 'lucide-react';
+import { Cpu, HardDrive, Database, Server } from 'lucide-react';
 
 interface SystemResourceMonitorProps {
   isModelLoading: boolean;
@@ -55,7 +55,7 @@ const SystemResourceMonitor: React.FC<SystemResourceMonitorProps> = ({
         <div>
           <div className="flex justify-between text-xs mb-1">
             <div className="flex items-center gap-1">
-              <Memory size={14} />
+              <HardDrive size={14} />
               <span>Memory</span>
             </div>
             <span>{formatMemory(resources.memory.used)} / {formatMemory(resources.memory.total)}</span>

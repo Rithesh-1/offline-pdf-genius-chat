@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -214,13 +213,13 @@ const Index = () => {
       toast({
         title: "Upload a PDF first",
         description: "Please upload at least one PDF document before starting the chat.",
-        variant: "warning",
+        variant: "destructive",
       });
     } else if (!isModelSelected()) {
       toast({
         title: "Select a model",
         description: "Please select or load a model to analyze your documents.",
-        variant: "warning", 
+        variant: "destructive",
       });
     }
   };
@@ -425,7 +424,6 @@ const Index = () => {
               onChange={setInputValue}
               onSend={handleSendMessage}
               isLoading={isLoading}
-              onFocus={handleChatFocus}
               disabled={!isPDFUploaded() || !isModelSelected()}
             />
           </div>

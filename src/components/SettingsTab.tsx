@@ -1,6 +1,5 @@
-
 import React, { useState } from "react";
-import { Trash2, Upload, Settings, ChartPie, BarChart, LineChart, HardDrive, Memory, Cpu, Database, Server } from "lucide-react";
+import { Trash2, Upload, Settings, ChartPie, BarChart, LineChart, HardDrive, Cpu, Database, Server } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";

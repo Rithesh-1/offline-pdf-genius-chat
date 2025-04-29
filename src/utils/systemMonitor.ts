@@ -36,6 +36,9 @@ export const getSystemResources = async (): Promise<SystemResources> => {
     const mockMemoryTotal = memoryInfo.jsHeapSizeLimit || 8000000000; // 8GB if not available
     const mockMemoryUsed = memoryInfo.usedJSHeapSize || Math.random() * 4000000000; // Random value if not available
     
+    // Check for WebGPU support - this is experimental and not universally available
+    const hasGpu = typeof navigator !== 'undefined' && 'gpu' in navigator;
+    
     // Return mock data structure
     return {
       memory: {
@@ -46,7 +49,7 @@ export const getSystemResources = async (): Promise<SystemResources> => {
       cpu: {
         usagePercent: 25 + Math.random() * 60 // Random value between 25-85%
       },
-      gpu: navigator.gpu ? {
+      gpu: hasGpu ? {
         usagePercent: 30 + Math.random() * 50, // Random value between 30-80%
         memoryUsed: 2 + Math.random() * 6, // Random value between 2-8 GB
         memoryTotal: 12 // Assuming 12GB VRAM
